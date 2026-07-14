@@ -1,0 +1,96 @@
+# Anti-Detect Android Emulator
+# Docker Compose Configuration
+
+services:
+  redroid-antidetect:
+    image: redroid/redroid:14.0.0_64only-latest
+    container_name: redroid-antidetect
+    privileged: true
+    pull_policy: always
+    volumes:
+      - ./data:/data
+      - ./config/redroid-antidetect.prop:/data/local/tmp/redroid-antidetect.prop:ro
+    ports:
+      - "5555:5555"    # ADB port
+      - "15555:15555"  # VNC port (optional)
+    environment:
+      - TZ=Asia/Dhaka
+    devices:
+      - /dev/binderfs/binder:/dev/binder
+      - /dev/binderfs/hwbinder:/dev/hwbinder
+      - /dev/binderfs/vndbinder:/dev/vndbinder
+    sysctls:
+      - net.ipv4.ping_group_range=0 65535
+    restart: unless-stopped
+    command: >
+      androidboot.redroid_width=1080
+      androidboot.redroid_height=2400
+      androidboot.redroid_dpi=480
+      androidboot.redroid_fps=60
+      androidboot.redroid_gpu_mode=host
+      androidboot.use_memfd=true
+      ro.product.model=Pixel_8_Pro
+      ro.product.brand=google
+      ro.product.device=husky
+      ro.product.manufacturer=Google
+      ro.adb.secure=0
+      ro.secure=0
+      ro.debuggable=0
+
+  # Alternative: Banking App Testing Profile
+  redroid-banking:
+    image: redroid/redroid:14.0.0_64only-latest
+    container_name: redroid-banking
+    privileged: true
+    pull_policy: always
+    volumes:
+      - ./data-banking:/data
+    ports:
+      - "5556:5555"
+    environment:
+      - TZ=Asia/Dhaka
+    devices:
+      - /dev/binderfs/binder:/dev/binder
+      - /dev/binderfs/hwbinder:/dev/hwbinder
+      - /dev/binderfs/vndbinder:/dev/vndbinder
+    sysctls:
+      - net.ipv4.ping_group_range=0 65535
+    restart: unless-stopped
+    command: >
+      androidboot.redroid_width=1080
+      androidboot.redroid_height=2400
+      androidboot.redroid_dpi=480
+      androidboot.redroid_gpu_mode=host
+      ro.product.model=Samsung_Galaxy_S24_Ultra
+      ro.product.brand=samsung
+      ro.product.device=galaxy_s24_ultra
+      ro.product.manufacturer=samsung
+
+  # Security Testing Profile
+  redroid-security:
+    image: redroid/redroid:14.0.0_64only-latest
+    container_name: redroid-security
+    privileged: true
+    pull_policy: always
+    volumes:
+      - ./data-security:/data
+    ports:
+      - "5557:5555"
+    environment:
+      - TZ=Asia/Dhaka
+    devices:
+      - /dev/binderfs/binder:/dev/binder
+      - /dev/binderfs/hwbinder:/dev/hwbinder
+      - /dev/binderfs/vndbinder:/dev/vndbinder
+    sysctls:
+      - net.ipv4.ping_group_range=0 65535
+    restart: unless-stopped
+    command: >
+      androidboot.redroid_width=1080
+      androidboot.redroid_height=2400
+      androidboot.redroid_dpi=480
+      androidboot.redroid_gpu_mode=host
+      ro.product.model=Xiaomi_14_Pro
+      ro.product.brand=xiaomi
+      ro.product.device=darwin
+      ro.product.manufacturer=Xiaomi

@@ -1,0 +1,66 @@
+# Anti-Detect Android Init Script
+# Based on redroid with anti-detection enhancements
+
+on early-init
+    mount debugfs debugfs /sys/kernel/debug mode=755
+
+    # Ueventd fixes
+    chmod 0666 /dev/null
+    chmod 0666 /dev/zero
+    chmod 0666 /dev/full
+    chmod 0666 /dev/ptmx
+    chmod 0666 /dev/pts/ptmx
+    chmod 0666 /dev/tty
+    chmod 0666 /dev/random
+    chmod 0666 /dev/urandom
+    chmod 0666 /dev/ashmem
+    chmod 0666 /dev/ion
+
+    chmod 0444 /dev/dma_heap/system
+    chown system system /dev/dma_heap/system
+
+    # IPC directory
+    mkdir /ipc 0777
+
+    # Input directory
+    exec -- /bin/rm -rf /dev/input
+    mkdir /dev/input
+
+    # Codec settings
+    setprop debug.stagefright.ccodec 0
+    setprop log.tag.libprocessgroup F
+
+    # GPU settings
+    setprop ro.opengles.version 196610
+
+# Memory fd support
+on post-fs-data && property:ro.boot.use_memfd=*
+    setprop sys.use_memfd ${ro.boot.use_memfd}
+
+on init
+    # FUSE for better compatibility
+    write /data/.empty 0
+    mount none /data/.empty /proc/vmallocinfo bind
+    mount none /data/.empty /sys/power/state bind
+
+    setprop debug.renderengine.backend gles
+    setprop ro.sf.lcd_density 480
+
+# Anti-detection: Remove emulator markers
+on post-fs-data
+    # Remove common emulator detection files
+    exec -- /vendor/bin/remove-emulator-markers.sh
+
+    # Configure network
+    exec - system system -- /vendor/bin/ipconfigstore
+
+    # Trigger encryption
+    trigger nonencrypted
+
+    exec -- /vendor/bin/post-fs-data.redroid.sh
+    exec -- /vendor/bin/antidetect-setup.sh
+
+on early-boot
+    exec -- /vendor/bin/gpu_config.sh
+    # Run anti-detection setup
+    exec -- /vendor/bin/antidetect-init.sh

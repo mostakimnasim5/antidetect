@@ -1,0 +1,79 @@
+# Anti-Detect Android Emulator Properties
+# Based on redroid with advanced anti-detection features
+
+# ========== Base Hardware ==========
+ro.hardware=redroid
+ro.radio.noril=yes
+ro.cold_boot_done=true
+persist.sys.fuse=1
+
+# ========== Display Configuration ==========
+androidboot.redroid_width=1080
+androidboot.redroid_height=2400
+androidboot.redroid_dpi=480
+androidboot.redroid_fps=60
+
+# ========== GPU Configuration ==========
+androidboot.redroid_gpu_mode=host
+debug.sf.nobootanimation=1
+ro.opengles.version=196610
+debug.renderengine.backend=gles
+
+# ========== Network Configuration ==========
+androidboot.redroid_net_ndns=2
+# Use realistic DNS
+androidboot.redroid_net_dns1=8.8.8.8
+androidboot.redroid_net_dns2=8.8.4.4
+
+# ========== Performance ==========
+# Use memfd for ashmem (kernel 5.18+)
+androidboot.use_memfd=true
+
+# ========== Security/Anti-Detection Props ==========
+# Fake device identity
+ro.product.model=Pixel 8 Pro
+ro.product.brand=google
+ro.product.device=husky
+ro.product.manufacturer=Google
+ro.product.name=husky
+ro.product.board=husky
+
+# Hide virtualization markers
+ro.kernel.vm.is_virtual_device=false
+ro.is_virtual_device=false
+
+# System properties to reduce detection
+ro.adb.secure=0
+ro.debuggable=0
+ro.secure=0
+
+# SELinux permissive for emulator
+ro.boot.selinux=permissive
+
+# Disable debugging features that reveal emulator
+persist.sys.usb.config=mtp,adb
+adb.secure=0
+
+# Fingerprint - realistic Google device
+ro.build.fingerprint=google/husky/husky:14/UP1A.231005.007/10861975:user/release-keys
+ro.build.description=husky-user 14 UP1A.231005.007 10861975 release-keys
+ro.build.product=husky
+ro.build.version.sdk=34
+ro.build.version.security_patch=2024-03-01
+ro.build.version.base_os=Android
+
+# Hardware info
+ro.board.platform=taro
+ro.hardware.sku=GA04767
+ro.product.system.model=GA04767
+ro.product.system.manufacturer=Google
+
+# ========== GMS Configuration ==========
+# Enable GMS compatibility
+ro.setupwizard.mode=OPTIONAL
+ro.com.google.clientidbase=android-google
+roopa_gms_core_enabled=true
+
+# ========== Audio Configuration ==========
+audio.offload.enabled=1
+audio.parser.ip.buffer.size=0
