@@ -1,0 +1,139 @@
+# VirtualPhonePro - Network Isolated Container Setup
+# Each instance gets its own isolated network with proxy/VPN support
+
+version: "3.8"
+
+services:
+  # Template for isolated ReDroid instance
+  # This is a template - instances are created dynamically
+  redroid-isolated:
+    image: ${REDROID_IMAGE:-virtualphonepro/redroid-spoofed:1.0.0}
+    container_name: ${INSTANCE_ID}
+    privileged: true
+    networks:
+      - isolated_network
+    
+    # Network configuration
+    ipv4_address: ${ASSIGNED_IP:-10.200.0.2}
+    
+    environment:
+      # Network isolation
+      - REDROID_NETWORK=isolated_network
+      - REDROID_IP=${ASSIGNED_IP}
+      - REDROID_GATEWAY=${GATEWAY}
+      - REDROID_DNS=${DNS1},${DNS2}
+      
+      # Proxy configuration
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - SOCKS_PROXY=${SOCKS_PROXY}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1}
+      
+      # Device spoofing
+      - MAC_ADDRESS=${MAC_ADDRESS}
+      
+      # Leak prevention
+      - LEAK_PREVENTION=enabled
+      - BLOCK_HOST_TRAFFIC=${BLOCK_HOST_TRAFFIC:-true}
+    
+    volumes:
+      - ./data:/data
+      - ./config:/spoof/config:ro
+      - /proc/self/fd:/proc/self/fd:ro
+      - /dev:/dev:ro
+    
+    ports:
+      - "${ADB_PORT:-5555}:5555"
+    
+    sysctls:
+      - net.ipv4.ping_group_range=0 65535
+      - net.ipv4.conf.all.rp_filter=1
+      - net.ipv4.conf.default.rp_filter=1
+      - net.ipv4.conf.all.forwarding=1
+      - net.ipv4.icmp_echo_ignore_broadcasts=1
+      - net.ipv4.icmp_ignore_bogus_error_responses=1
+    
+    dns:
+      - ${DNS1}
+      - ${DNS2}
+    
+    mem_limit: ${MEMORY_LIMIT:-768M}
+    cpu_period: 100000
+    cpu_quota: ${CPU_QUOTA:-100000}
+    restart: unless-stopped
+    
+    # Security: Drop capabilities
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    
+    security_opt:
+      - apparmor:docker-default
+      - seccomp:unconfined
+    
+    healthcheck:
+      test: ["CMD", "getprop", "ro.build.version.sdk"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Companion VPN container (optional)
+  vpn-gateway:
+    image: ${VPN_IMAGE:-ghcr.io/linuxserver/wireguard:latest}
+    container_name: ${INSTANCE_ID}_vpn
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Asia/Dhaka}
+      - SERVERURL=${VPN_SERVER}
+      - PEERS=${VPN_PEERS:-1}
+      - INTERNAL_SUBNET=${VPN_SUBNET:-10.13.13.0}
+    networks:
+      - isolated_network
+    volumes:
+      - ./vpn-config:/config
+      - /lib/modules:/lib/modules:ro
+    ports:
+      - "${VPN_PORT:-51820}:51820/udp"
+    sysctls:
+      - net.ipv4.ip_forward=1
+    restart: unless-stopped
+    profiles:
+      - vpn
+
+  # Tor Proxy container (optional)
+  tor-proxy:
+    image: dperson/tor-proxy:latest
+    container_name: ${INSTANCE_ID}_tor
+    networks:
+      - isolated_network
+    environment:
+      - TOR_NODNS=1
+      - TOR_MAXCIRCUITS=10
+    ports:
+      - "9050:9050"
+      - "9051:9051"
+    restart: unless-stopped
+    profiles:
+      - tor
+
+networks:
+  isolated_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: ${BRIDGE_NAME:-vppo%d}
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_proxy_arp: "true"
+    ipam:
+      driver: default
+      config:
+        - subnet: ${NETWORK_SUBNET:-10.200.0.0/24}
+          gateway: ${NETWORK_GATEWAY:-10.200.0.1}
+          ip_range: ${IP_RANGE:-10.200.0.128/25}
